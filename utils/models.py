@@ -8,9 +8,9 @@ import numpy as np
 from tcn import TCN
 from tensorflow import keras
 import time
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ReduceLROnPlateau
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from kerastuner.tuners import Hyperband, BayesianOptimization
-from utils.misc import TerminateNaN, MinimumEpochTrialCallback
+from utils.misc import TerminateNaN
 
 
 def create_casual_mask(seq_length):
@@ -334,88 +334,3 @@ class ModelTrainer():
             return final_model, history, best_hps, duration
     
 
-
-    # def build_lstm_model(self, hp):
-    #     model = Sequential([
-    #         LSTM(
-    #             units=hp.Int('units', min_value=32, max_value=128, step=32),
-    #             return_sequences=True,
-    #             input_shape=(self.datasets['X_train'].shape[1], 1),
-    #             kernel_initializer='orthogonal'  # Set the initializer here
-    #         ),
-    #         Dropout(hp.Float('dropout_1', min_value=0.0, max_value=0.5, step=0.1)),
-    #         LSTM(
-    #             units=hp.Int('units', min_value=32, max_value=128, step=32),
-    #             return_sequences=False,
-    #             kernel_initializer='orthogonal'  # Apply the initializer to other layers if needed
-    #         ),
-    #         Dropout(hp.Float('dropout_2', min_value=0.0, max_value=0.5, step=0.1)),
-    #         Dense(
-    #             units=hp.Int('dense_units', min_value=16, max_value=128, step=16),
-    #             activation='relu',
-    #             kernel_initializer='he_normal'  # Apply initializer to Dense layers as well
-    #         ),
-    #         Dense(1)  # Output layer
-    #     ])
-        
-    #     model.compile(
-    #         optimizer=hp.Choice('optimizer', values=['adam', 'sgd']),
-    #         loss=self.loss,
-    #         metrics=[self.loss]
-    #     )
-    #     return model
-
-      # def train_model(self, batch_size=32, training_epoch=50, final_model_epoch=100, overwrite=False, bayesian=False):
-
-    #     start_time = time.time()
-
-    #     min_epochs_callback = MinimumEpochTrialCallback(min_epochs=15)
-
-    #     early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-    #     tensorboard_callback = TensorBoard(log_dir=self.log_dir, histogram_freq=1, write_images=True)
-    #     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1, min_lr=1e-5)
-    #     terminate_nan = TerminateNaN()
-
-    #     tuner = Hyperband(
-    #         lambda hp: self.build_model(hp),
-    #         objective='val_loss',
-    #         max_epochs=training_epoch,
-    #         directory=self.tuning_dir,
-    #         factor=5,
-    #         overwrite=overwrite,
-    #         project_name=f'my_{self.model_type}_model_project')
-        
-    #     if bayesian:
-    #         tuner = kt.BayesianOptimization(
-    #             self.build_model,
-    #             objective='val_loss',
-    #             max_trials=training_epoch,
-    #             num_initial_points=5,
-    #             directory=self.tuning_dir,
-    #             project_name=f'my_{self.model_type}_model_project')
-
-    #     evaluation_interval = int(np.ceil(self.datasets['X_train'].shape[0] / batch_size))
-
-    #     tuner.search(self.datasets['X_train'], self.datasets['y_train'],
-    #                  epochs=training_epoch,
-    #                  steps_per_epoch=evaluation_interval,
-    #                  validation_data=(self.datasets['X_val'], self.datasets['y_val']),
-    #                  callbacks=[early_stopping, tensorboard_callback, reduce_lr, terminate_nan, min_epochs_callback])
-
-    #     best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
-    #     final_model = tuner.hypermodel.build(best_hps)
-    #     final_model.summary()
-
-    #     tensorboard_callback_final = TensorBoard(log_dir=self.log_dir, histogram_freq=1, write_images=True)
-
-    #     history = final_model.fit(self.datasets['X_train'], self.datasets['y_train'],
-    #                               batch_size=batch_size, 
-    #                               epochs=final_model_epoch,
-    #                               validation_data=(self.datasets['X_val'], self.datasets['y_val']),
-    #                               callbacks=[tensorboard_callback_final, reduce_lr])
-        
-    #     # Calculate the total time taken
-    #     end_time = time.time()
-    #     duration = end_time - start_time
-
-    #    return final_model, history, best_hps, duration

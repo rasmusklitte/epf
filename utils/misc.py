@@ -11,30 +11,6 @@ from utils import metrics
 import logging 
 import pickle
 
-
-class MinimumEpochsCallback(Callback):
-    def __init__(self, min_epochs):
-        super().__init__()
-        self.min_epochs = min_epochs
-
-    def on_epoch_end(self, epoch, logs=None):
-        # Disable stopping before reaching minimum epochs
-        if epoch + 1 < self.min_epochs:
-            self.model.stop_training = False
-
-
-class MinimumEpochTrialCallback(Callback):
-    def __init__(self, min_epochs=10):
-        super().__init__()
-        self.min_epochs = min_epochs
-
-    def on_train_begin(self, logs=None):
-        # Check if the current trial's max epochs are below the minimum threshold
-        if self.params['epochs'] < self.min_epochs:
-            print(f"Skipping trial as it starts with {self.params['epochs']} epochs, which is below the minimum of {self.min_epochs} epochs.")
-            self.model.stop_training = True
-
-
 class TerminateNaN(Callback):
     """
     Callback that terminates training if NaN loss is encountered.
@@ -48,20 +24,6 @@ class TerminateNaN(Callback):
         """
         super().__init__()
         self.monitor = monitor
-
-    def on_epoch_end(self, epoch, logs=None):
-        """
-        This method is called at the end of each epoch.
-
-        :param epoch: Index of the epoch.
-        :param logs: Dictionary containing metrics monitored during training.
-        """
-        logs = logs or {}
-        loss = logs.get(self.monitor)  # Get the monitored metric
-        if loss is not None:
-            if np.isnan(loss) or np.isinf(loss):
-                print('Invalid loss detected. Stopping training...')
-                self.model.stop_training = True
 
 
 import numpy as np
@@ -138,14 +100,6 @@ class EvaluationMetric:
     def rmse(self, actual: np.ndarray, predicted: np.ndarray):
         """ Root Mean Squared Error """
         return np.sqrt(self.mse(actual, predicted))
-
-    # def nrmse(self, actual: np.ndarray, predicted: np.ndarray):
-    #     """ Normalized Root Mean Squared Error """
-    #     return self.rmse(actual, predicted) / (actual.max() - actual.min() + self.EPSILON)
-
-    # def me(self, actual: np.ndarray, predicted: np.ndarray):
-    #     """ Mean Error """
-    #     return np.mean(self._error(actual, predicted))
 
     def mae(self, actual: np.ndarray, predicted: np.ndarray):
         """ Mean Absolute Error """
@@ -494,7 +448,6 @@ class Plotting():
 
         # Final touches on plot
         plt.legend()
-        #plt.title(f'{self.model} Predictions of DA-prices for the period from {self.time_period.replace("_", " ")}{self.extra_info.replace("_", " ")}')
         plt.xlabel('Date')
         plt.ylabel('Day Ahead Spot Price (DKK/MWh)')
         plt.xticks(fontsize=8)
@@ -507,14 +460,11 @@ class Plotting():
 
         # Plotting setup
         plt.figure(figsize=(16, 8))
-        #plt.plot(combined_df.index[:training_data_len], combined_df['Day Ahead Spot Price'][:training_data_len], color='navy', label='Training Data')
-        #plt.plot(combined_df.index[training_data_len:training_data_len + test_data_len], combined_df['Day Ahead Spot Price'][training_data_len:training_data_len + test_data_len], color='black', label='Validation Data')
         plt.plot(combined_df.index[training_data_len + test_data_len:], combined_df['Day Ahead Spot Price'][training_data_len + test_data_len:], color='grey', label='Test Data')
         plt.plot(combined_df.index[training_data_len + test_data_len:], combined_df['Predictions'][training_data_len + test_data_len:], color='red', label='Predictions', alpha=0.7)
 
         # Final touches on plot
         plt.legend()
-        #plt.title(f'{self.model} Predictions of Electricity Prices for the period from {self.time_period.replace("_", " ")}{self.extra_info.replace("_", " ")}')
         plt.xlabel('Date')
         plt.ylabel('Day Ahead Spot Price (DKK/MWh)')
         plt.xticks(fontsize=8)
@@ -531,7 +481,6 @@ class Plotting():
         plt.plot(np.arange(len(loss)) + 1, loss, '.', label="Training loss", color='navy')
         plt.plot(np.arange(len(val_loss)) + 1, val_loss, '-', label="Validation loss", color='red')
         plt.legend(fontsize=14)
-        #plt.title(f"{self.model} Learning Curves for the period from {self.time_period}{self.extra_info}", fontsize=16)
         plt.xlabel("Epochs")
         plt.ylabel("Loss")
         plt.grid(True)
@@ -661,19 +610,6 @@ class LoadData:
         y_val_scaled = scaler_y.transform(y_val)
         X_test_scaled = scaler_X.transform(X_test)
         y_test_scaled = scaler_y.transform(y_test)
-
-        # # Function to create sequences
-        # def create_sequences(input_x, input_y, input_steps, output_steps):
-        #     X_seq, y_seq = [], []
-        #     for i in range(len(input_x) - input_steps - output_steps + 1):
-        #         X_seq.append(input_x[i:i+input_steps])  # Collect input sequence
-        #         y_seq.append(input_y[i+input_steps:i+input_steps+output_steps])  # Collect corresponding target sequence
-        #     return np.array(X_seq), np.array(y_seq)
-
-        # # Create sequences for training, validation, and testing
-        # X_train_seq, y_train_seq = create_sequences(X_train_scaled, y_train_scaled, input_steps, output_steps)
-        # X_val_seq, y_val_seq = create_sequences(X_val_scaled, y_val_scaled, input_steps, output_steps)
-        # X_test_seq, y_test_seq = create_sequences(X_test_scaled, y_test_scaled, input_steps, output_steps)
 
         def create_sequences_with_columns(input_x, input_y, input_steps, output_steps, column_names):
             X_seq, y_seq = [], []
